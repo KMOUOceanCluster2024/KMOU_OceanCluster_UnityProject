@@ -132,6 +132,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 125340604}
+  - component: {fileID: 125340603}
   m_Layer: 0
   m_Name: "\uBC15\uC2A4_\uCEF4\uD4E8\uD130\uAD6C\uC870\uB860Spawner"
   m_TagString: Untagged
@@ -139,6 +140,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &125340603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 125340602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad9415f930a567d409d3bafe486e70f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefabObj: {fileID: 1514155859720581178, guid: 43171eabb2940624b9b769b3c7861ad0, type: 3}
+  spawnRate: 0
+  minRate: 3
+  maxRate: 6
+  spawnYPos: 7
+  spawnMinXPos: -2.8
+  spawnMaxXPos: 2.6
 --- !u!4 &125340604
 Transform:
   m_ObjectHideFlags: 0
@@ -1124,6 +1144,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1940205402}
   - component: {fileID: 1940205401}
+  - component: {fileID: 1940205400}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1131,6 +1152,14 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!81 &1940205400
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940205399}
+  m_Enabled: 1
 --- !u!20 &1940205401
 Camera:
   m_ObjectHideFlags: 0
@@ -1317,12 +1346,12 @@ CanvasRenderer:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 360770025}
   - {fileID: 1940205402}
   - {fileID: 1116711270}
   - {fileID: 2024153714}
   - {fileID: 125340604}
   - {fileID: 503369925}
   - {fileID: 588167836}
+  - {fileID: 360770025}
   - {fileID: 910546295}
   - {fileID: 903834347}

@@ -49,7 +49,7 @@ public class MovingObject : MonoBehaviour
         {
             Destroy(this.gameObject);
         }
-        
+
     }
 
     IEnumerator MoveCoroutine()
@@ -96,7 +96,7 @@ public class MovingObject : MonoBehaviour
 
             if (hit.transform != null)
                 break;
-             
+
             animator.SetBool("Walking", true);
 
             while (currentWalkCount < walkCount)
