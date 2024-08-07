@@ -27,5 +27,7 @@ public enum PROTOCOL : short
     MiniGame_End_Request = 13,
     MiniGame_End_Success = 14,
     Quest_Complete_Request = 15,
-    Quest_Complete_Success = 16
+    Quest_Complete_Success = 16,
+
+    Delete_User = 17
 }

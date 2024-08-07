@@ -49,7 +49,7 @@ public class MovingObject : MonoBehaviour
         {
             Destroy(this.gameObject);
         }
-        
+
     }
 
     IEnumerator MoveCoroutine()
@@ -96,7 +96,7 @@ public class MovingObject : MonoBehaviour
 
             if (hit.transform != null)
                 break;
-             
+
             animator.SetBool("Walking", true);
 
             while (currentWalkCount < walkCount)
@@ -115,7 +115,7 @@ public class MovingObject : MonoBehaviour
                 if (applyRunFlag)
                     currentWalkCount++; // 한 회차 돌 때마다 current 1씩 증가. shift가 눌리면 2씩 증가
                 currentWalkCount++;
-                yield return new WaitForSeconds(0.01f); // 코루틴 기본 문법. 1초 동안 대기. 다중 처리 개념. 반복문이 20번이면 0.2초 대기
+                yield return new WaitForSeconds(0.01f); // 코루틴 기본 문법. 다중 처리 개념. 반복문이 20번이면 0.2초 대기
             }
             currentWalkCount = 0; // 반복문에서 빠져나오면 다시 0으로 초기화
 
