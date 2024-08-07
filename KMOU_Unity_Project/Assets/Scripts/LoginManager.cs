@@ -14,9 +14,11 @@ using System.Threading;
 
 public class LoginManager : MonoBehaviour
 {
+    int last_scene;
     float last_x_position;
     float last_y_position;
     string client_nickname;
+
     void Update()
     {
         if (NetworkManager.Instance.login_messages.Count != 0)
@@ -27,13 +29,15 @@ public class LoginManager : MonoBehaviour
                 if (login_react.pt_id == PROTOCOL.LOGIN_Success)
                 {
                     Debug.Log("로그인 성공!");
+                    last_scene = (int)login_react.first_login_info.scene_num;
                     last_x_position = (float)login_react.first_login_info.x_position;
                     last_y_position = (float)login_react.first_login_info.y_position;
                     client_nickname = login_react.first_login_info.Nickname;
+                    PlayerPrefs.SetInt("scene_num", last_scene);
                     PlayerPrefs.SetFloat("last_x_position", last_x_position);
                     PlayerPrefs.SetFloat("last_y_position", last_y_position);
                     PlayerPrefs.SetString("client_nickname", client_nickname);
-                    SceneManager.LoadScene("Bridge");
+                    SceneManager.LoadScene("Waiting_Room");
                 }
                 else
                 {

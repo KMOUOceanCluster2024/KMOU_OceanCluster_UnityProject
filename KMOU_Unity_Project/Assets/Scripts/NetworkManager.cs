@@ -56,11 +56,15 @@ public class NetworkManager : MonoBehaviour
     public bool IsConnected = false;
     public PROTOCOL current_pt_id = PROTOCOL.Setting;
 
-    public Queue<message> every_messages;
-    public Queue<message> signup_messages;
-    public Queue<message> login_messages;
-    public Queue<message> chat_messages;
-    public Queue<message> other_users;
+    public Queue<message> every_messages = new Queue<message>();
+    public Queue<message> signup_messages = new Queue<message>();
+    public Queue<message> login_messages = new Queue<message>();
+    public Queue<message> chat_messages = new Queue<message>();
+    public Queue<message> other_users = new Queue<message>();
+    public int scene_num;
+
+    Dictionary<string, int> scene_name_to_num = new Dictionary<string, int>();
+
     public static NetworkManager Instance
     {
         get
@@ -75,21 +79,48 @@ public class NetworkManager : MonoBehaviour
         }
     }
 
-    void Awake()
+    private void Awake()
     {
+        scene_name_to_num.Add("Bridge", 0);
+        scene_name_to_num.Add("Bridge 1", 1);
+        scene_name_to_num.Add("Waiting_Room", -1);
+        scene_name_to_num.Add("Title", -1);
+        scene_name_to_num.Add("SignUp", -1);
+        scene_name_to_num.Add("SampleScene", -1);
+        scene_name_to_num.Add("Login", -1);
+        // 씬 전환 이벤트 핸들러 등록
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        // 씬 전환 이벤트 핸들러 해제
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void Start()
+    {
+        DontDestroyOnLoad(gameObject);
         if (_instance == null)
         {
             _instance = this;
-            DontDestroyOnLoad(gameObject);
-            every_messages = new Queue<message>();
-            signup_messages = new Queue<message>();
-            login_messages = new Queue<message>();
-            chat_messages = new Queue<message>();
-            other_users = new Queue<message>();
         }
         else if (_instance != this)
         {
             Destroy(gameObject);
+        }
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene_name_to_num.TryGetValue(scene.name, out int sceneNumber))
+        {
+            scene_num = sceneNumber;
+            Debug.Log("새로운 씬 로드됨: " + scene.name + " - Scene Num: " + scene_num);
+        }
+        else
+        {
+            Debug.LogWarning("씬 이름이 딕셔너리에 없음: " + scene.name);
         }
     }
 
@@ -160,11 +191,12 @@ public class NetworkManager : MonoBehaviour
             // 소켓을 닫거나 재시도하는 등의 오류 처리
         }
     }
+
     private void Update()
     {
-        if(every_messages.Count > 0)
+        if (every_messages.Count > 0)
         {
-            lock(every_messages)
+            lock (every_messages)
             {
                 message new_message = every_messages.Dequeue();
                 if (current_pt_id == PROTOCOL.SIGNUP_Request && (new_message.pt_id == PROTOCOL.SIGNUP_Success || new_message.pt_id == PROTOCOL.SIGNUP_Fail))
@@ -179,13 +211,17 @@ public class NetworkManager : MonoBehaviour
                 {
                     chat_messages.Enqueue(new_message);
                 }
-                else if(new_message.pt_id == PROTOCOL.Deliver_Position || new_message.pt_id == PROTOCOL.Delete_User)
+                else if (new_message.pt_id == PROTOCOL.Deliver_Position || new_message.pt_id == PROTOCOL.Delete_User)
                 {
-                    other_users.Enqueue(new_message);
+                    if (new_message.first_login_info.scene_num == scene_num)
+                    {
+                        other_users.Enqueue(new_message);
+                    }
                 }
             }
         }
     }
+
     public void SendData(message data)
     {
         if (_socket != null && IsConnected)
@@ -194,7 +230,6 @@ public class NetworkManager : MonoBehaviour
             {
                 current_pt_id = data.pt_id;
                 string new_message = JsonConvert.SerializeObject(data);
-                Debug.Log(new_message);
                 byte[] messageBuffer = Encoding.UTF8.GetBytes(new_message);
                 _socket.Send(messageBuffer);
             }

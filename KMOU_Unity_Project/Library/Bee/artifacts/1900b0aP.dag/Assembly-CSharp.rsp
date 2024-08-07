@@ -331,6 +331,7 @@
 "Assets/Scripts/protocol.cs"
 "Assets/Scripts/SceneChanger.cs"
 "Assets/Scripts/SignUpManager.cs"
+"Assets/Scripts/To_InGame_Manager.cs"
 -langversion:9.0
 
 /deterministic

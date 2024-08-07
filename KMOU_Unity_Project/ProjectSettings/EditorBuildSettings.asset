@@ -18,6 +18,12 @@ EditorBuildSettings:
     path: Assets/Scenes/Login.unity
     guid: f2f58a6ff0c99f34d811939f25f41293
   - enabled: 1
+    path: Assets/Scenes/Waiting_Room.unity
+    guid: b3df5dcd580afb04da75e1bd0c38945d
+  - enabled: 1
     path: Assets/Scenes/Bridge.unity
     guid: 31947fd014b1d2a46a5e885527ae636c
+  - enabled: 1
+    path: Assets/Scenes/Bridge 1.unity
+    guid: d4843982e2ade1840aa26cdf3398ea56
   m_configObjects: {}

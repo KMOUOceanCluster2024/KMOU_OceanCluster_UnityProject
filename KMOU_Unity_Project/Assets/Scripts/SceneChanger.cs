@@ -22,4 +22,12 @@ public class SceneChanger : MonoBehaviour
     {
         SceneManager.LoadScene("Title");
     }
+    public void test_go_bridge1()
+    {
+        SceneManager.LoadScene("Bridge 1");
+    }
+    public void test_go_bridge()
+    {
+        SceneManager.LoadScene("Bridge");
+    }
 }
