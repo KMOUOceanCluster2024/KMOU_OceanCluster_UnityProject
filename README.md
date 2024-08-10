@@ -22,3 +22,8 @@ git add .
 git commit -m "Migrate large files to LFS"
 git push origin feature/[branch-name]
 ```
+
+### branch clone
+```
+git clone -b [branch_name] https://github.com/username/repository.git
+```
