@@ -25,5 +25,5 @@ git push origin feature/[branch-name]
 
 ### branch clone
 ```
-git clone -b [branch_name] https://github.com/username/repository.git
+git clone -b [branch_name] https://github.com/KMOUOceanCluster2024/KMOU_OceanCluster_UnityProject.git
 ```
