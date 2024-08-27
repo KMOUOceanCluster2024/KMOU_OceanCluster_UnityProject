@@ -458,7 +458,7 @@ namespace Chat_Server
                     byte[] buffer = e.Buffer;
                     string receivedJson = Encoding.UTF8.GetString(buffer, 0, bytesReceived);
                     message received_info = JsonConvert.DeserializeObject<message>(receivedJson);
-                    //Console.WriteLine(receivedJson);
+                    Console.WriteLine(receivedJson);
 
                     if(received_info.pt_id == PROTOCOL.Position_Update)
                     {
@@ -545,7 +545,7 @@ namespace Chat_Server
                     {
                         chat_manager_cs.enqueue_chat_message(user_token, received_info);
                     }
-                    else if(received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request)
+                    else if(received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request || received_info.pt_id == PROTOCOL.MiniGame_End_Request)
                     {
                         Console.WriteLine("\nClient Send Quest Message\n");
                         game_manager_cs.enqueue_game_message(user_token, received_info);
@@ -566,7 +566,11 @@ namespace Chat_Server
             catch (Exception ex)
             {
                 Console.WriteLine("Error handling receive: " + ex.Message);
-                // 에러 처리
+                Console.WriteLine("Logon Client disconnected");
+                client_sockets.Remove(user_token.socket);
+                user_token.socket.Close();
+                Console.WriteLine("Client disconnected >> " + client_sockets.Count);
+                on_session_closed(user_token);
             }
         }
         void SendDataToToken(Token token, string message)

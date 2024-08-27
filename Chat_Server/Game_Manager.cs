@@ -90,6 +90,20 @@ namespace Chat_Server
                             .Set("Quest_State", quest_info2.quest_state);
                         this.server_network.UserCharacter.UpdateOne(updateFilter2, update2);
                         break;
+                    case PROTOCOL.MiniGame_End_Request:
+                        message new_message3 = new message();
+                        new_message3.pt_id = PROTOCOL.MiniGame_End_Success;
+                        InGame_message minigame_info = new InGame_message();
+                        minigame_info.scene_num = game_request.owner_info.scene_num;
+                        new_message3.ingame_info = minigame_info;
+                        string new_deliver_message3 = JsonConvert.SerializeObject(new_message3);
+                        byte[] messageBuffer3 = Encoding.UTF8.GetBytes(new_deliver_message3);
+                        game_request.owner_info.socket.Send(messageBuffer3);
+                        Console.WriteLine("Send to Client MiniGame_End_Success");
+                        
+                        break;
+                    default:
+                        break;
                 }
             }
         }
