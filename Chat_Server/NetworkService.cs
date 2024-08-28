@@ -35,6 +35,8 @@ namespace Chat_Server
         public int main_quest_num { get; set; }
         public int detail_quest_num { get; set; }
         public int quest_state { get; set; }
+        public List<int> minigame_nums { get; set; }
+        public List<double> scores { get; set; }
     }
     public class InGame_message
     {
@@ -49,6 +51,8 @@ namespace Chat_Server
         public int detail_quest_num { get; set; }
         public int quest_state { get; set; }
         public string own_nickname { get; set; }
+        public double sub_quest_score { get; set; }
+        public int minigame_num { get; set; }
     }
     class NetworkService
     {
@@ -91,11 +95,13 @@ namespace Chat_Server
         private const string TEST_DB = "Game_DB";
         private const string User_info_Collection = "User_info";
         private const string User_Character_Collection = "User_Character";
+        private const string Minigame_Record_Collection = "Minigame_Record";
 
         public MongoClient Mongo_Server;
         public IMongoDatabase database;
         public IMongoCollection<BsonDocument> UsersCollection;
         public IMongoCollection<BsonDocument> UserCharacter;
+        public IMongoCollection<BsonDocument> MinigameRecord;
 
         public Chat_Manager chat_manager_cs;
         public Game_Manager game_manager_cs;
@@ -205,6 +211,7 @@ namespace Chat_Server
             this.session_created_callback += add_users;
             UsersCollection = database.GetCollection<BsonDocument>(User_info_Collection);
             UserCharacter = database.GetCollection<BsonDocument>(User_Character_Collection);
+            MinigameRecord = database.GetCollection<BsonDocument>(Minigame_Record_Collection);
             chat_manager_cs.start_chatmanager(this);
             game_manager_cs.start_gamemanager(this);
             try
@@ -362,6 +369,22 @@ namespace Chat_Server
                                 int current_detail_quest = position_info_doc["Detail_Quest_num"].AsInt32;
                                 int current_quest_state = position_info_doc["Quest_State"].AsInt32;
 
+                                List<int> current_minigame_nums = new List<int>();
+                                List<double> current_scores = new List<double>();
+                                var minigame_filter = Builders<BsonDocument>.Filter.Eq("Nickname", user_nickname);
+                                var minigame_records = MinigameRecord.Find(minigame_filter).ToList();
+                                foreach (var record in minigame_records)
+                                {
+                                    int minigame_num = record["Minigame_num"].AsInt32;
+                                    double score = record["score"].AsDouble;
+
+                                    current_minigame_nums.Add(minigame_num);
+                                    current_scores.Add(score);
+                                }
+                                //user_nickname으로 MinigameRecord 콜렉션에서 찾아서
+                                //current_minigame_nums에는 Minigame_num 데이터들을
+                                //current_scores에는 score 데이터들을 넣기
+
                                 scene = last_scene;
 
                                 islogon = true;
@@ -375,6 +398,8 @@ namespace Chat_Server
                                 signup_login_state.detail_quest_num = current_detail_quest;
                                 signup_login_state.quest_state = current_quest_state;
                                 signup_login_send.first_login_info = signup_login_state;
+                                signup_login_state.minigame_nums = current_minigame_nums;
+                                signup_login_state.scores = current_scores;
                             }
                         }
                         else
@@ -545,7 +570,7 @@ namespace Chat_Server
                     {
                         chat_manager_cs.enqueue_chat_message(user_token, received_info);
                     }
-                    else if(received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request || received_info.pt_id == PROTOCOL.MiniGame_End_Request)
+                    else if(received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request || received_info.pt_id == PROTOCOL.MiniGame_End_Request || received_info.pt_id == PROTOCOL.Sub_Quest_End_Request)
                     {
                         Console.WriteLine("\nClient Send Quest Message\n");
                         game_manager_cs.enqueue_game_message(user_token, received_info);

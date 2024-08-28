@@ -102,6 +102,34 @@ namespace Chat_Server
                         Console.WriteLine("Send to Client MiniGame_End_Success");
                         
                         break;
+                    case PROTOCOL.Sub_Quest_End_Request:
+                        var filter1 = Builders<BsonDocument>.Filter.And(Builders<BsonDocument>.Filter.Eq("Nickname", game_request.owner_info.client_nickname), Builders<BsonDocument>.Filter.Eq("Minigame_num", game_request.game_message.ingame_info.minigame_num));
+                        var docs = this.server_network.MinigameRecord.Find(filter1).ToList();
+                        if (docs.Count == 1)    //이미 기록이 있을 때는 있는 기록이랑 비교해서 최고 기록으로 갱신
+                        {
+                            var firstDoc = docs.First();
+                            if(firstDoc["score"].AsDouble < game_request.game_message.ingame_info.sub_quest_score)
+                            {
+                                var update = Builders<BsonDocument>.Update.Set("score", game_request.game_message.ingame_info.sub_quest_score); // 새로운 LoginST 값 설정
+                                var updateResult = this.server_network.MinigameRecord.UpdateOne(filter1, update);
+                            }
+                        }
+                        else
+                        {
+                            var doc1 = new BsonDocument { { "Nickname", game_request.owner_info.client_nickname }, { "Minigame_num", game_request.game_message.ingame_info.minigame_num }, { "score", game_request.game_message.ingame_info.sub_quest_score } };
+                            this.server_network.MinigameRecord.InsertOne(doc1);
+                        }   //기록이 없을 때는 추가
+
+                        message new_message4 = new message();
+                        new_message4.pt_id = PROTOCOL.Sub_Quest_End_Success;
+                        InGame_message subquest_info = new InGame_message();
+                        subquest_info.scene_num = game_request.owner_info.scene_num;
+                        new_message4.ingame_info = subquest_info;
+                        string new_deliver_message4 = JsonConvert.SerializeObject(new_message4);
+                        byte[] messageBuffer4 = Encoding.UTF8.GetBytes(new_deliver_message4);
+                        game_request.owner_info.socket.Send(messageBuffer4);
+                        Console.WriteLine("Send to Client Sub Quest End Success");
+                        break;
                     default:
                         break;
                 }
@@ -123,6 +151,8 @@ namespace Chat_Server
             new_info.detail_quest_num = received_game_message.ingame_info.detail_quest_num;
             new_info.quest_state = received_game_message.ingame_info.quest_state;
             new_info.own_nickname = received_game_message.ingame_info.own_nickname;
+            new_info.sub_quest_score = received_game_message.ingame_info.sub_quest_score;
+            new_info.minigame_num = received_game_message.ingame_info.minigame_num;
             ingame_new_message.ingame_info = new_info;
             request_message.game_message = ingame_new_message;
             game_message_queue.Enqueue(request_message);
