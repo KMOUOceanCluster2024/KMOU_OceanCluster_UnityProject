@@ -380,6 +380,8 @@ namespace Chat_Server
 
                                     current_minigame_nums.Add(minigame_num);
                                     current_scores.Add(score);
+
+                                    Console.WriteLine(nickname + ": " + minigame_num + ", " + score);
                                 }
                                 //user_nickname으로 MinigameRecord 콜렉션에서 찾아서
                                 //current_minigame_nums에는 Minigame_num 데이터들을
@@ -480,100 +482,19 @@ namespace Chat_Server
                 int bytesReceived = e.BytesTransferred;
                 if (bytesReceived > 0 && e.SocketError == SocketError.Success)
                 {
-                    byte[] buffer = e.Buffer;
-                    string receivedJson = Encoding.UTF8.GetString(buffer, 0, bytesReceived);
-                    message received_info = JsonConvert.DeserializeObject<message>(receivedJson);
-                    Console.WriteLine(receivedJson);
+                    user_token.AppendData(e.Buffer, bytesReceived);
 
-                    if(received_info.pt_id == PROTOCOL.Position_Update)
+                    // 메시지 길이가 설정되지 않았다면 시도
+                    if (!user_token.HasMessageLength)
                     {
-                        var updateFilter = Builders<BsonDocument>.Filter.Eq("Nickname", user_token.client_nickname);
-                        var update = Builders<BsonDocument>.Update
-                            .Set("scene_num", received_info.ingame_info.scene_num)
-                            .Set("x_position", received_info.ingame_info.x_position)
-                            .Set("y_position", received_info.ingame_info.y_position);
-
-                        UserCharacter.UpdateOne(updateFilter, update);
-                        //Console.WriteLine("Nickname: " + user_token.client_nickname + " >> scene_num: " + received_info.ingame_info.scene_num + ", x_position: " + received_info.ingame_info.x_position + ", y_position: " + received_info.ingame_info.y_position);
-
-                        message new_message1 = new message();
-                        new_message1.pt_id = PROTOCOL.Deliver_Position;
-                        login_success_info other_user_position = new login_success_info();
-                        other_user_position.Nickname = received_info.ingame_info.own_nickname;
-                        other_user_position.scene_num = received_info.ingame_info.scene_num;
-                        other_user_position.x_position = received_info.ingame_info.x_position;
-                        other_user_position.y_position = received_info.ingame_info.y_position;
-                        new_message1.first_login_info = other_user_position;
-                        string new_deliver_message1 = JsonConvert.SerializeObject(new_message1);
-                        byte[] messageBuffer1 = Encoding.UTF8.GetBytes(new_deliver_message1);
-
-                        message new_message2 = new message();
-                        new_message2.pt_id = PROTOCOL.Delete_User;
-                        login_success_info other_user_off = new login_success_info();
-                        other_user_off.Nickname = user_token.client_nickname;
-                        other_user_off.scene_num = user_token.scene_num;
-                        new_message2.first_login_info = other_user_off;
-                        string new_deliver_message2 = JsonConvert.SerializeObject(new_message2);
-                        byte[] messageBuffer2 = Encoding.UTF8.GetBytes(new_deliver_message2);
-
-                        if (user_token.scene_num == received_info.ingame_info.scene_num)
+                        if (user_token.TryReadMessageLength())
                         {
-                            foreach (Token t in users)
-                            {
-                                if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
-                                {
-                                    try
-                                    {
-                                        t.socket.Send(messageBuffer1);
-                                    }
-                                    catch (Exception sendEx)
-                                    {
-                                        Console.WriteLine("Error sending to client: " + sendEx.Message);
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            foreach (Token t in users)
-                            {
-                                if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
-                                {
-                                    try
-                                    {
-                                        t.socket.Send(messageBuffer2);
-                                    }
-                                    catch (Exception sendEx)
-                                    {
-                                        Console.WriteLine("Error sending to client: " + sendEx.Message);
-                                    }
-                                }
-                            }
-                            user_token.scene_num = received_info.ingame_info.scene_num;
-                            foreach (Token t in users)
-                            {
-                                if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
-                                {
-                                    try
-                                    {
-                                        t.socket.Send(messageBuffer1);
-                                    }
-                                    catch (Exception sendEx)
-                                    {
-                                        Console.WriteLine("Error sending to client: " + sendEx.Message);
-                                    }
-                                }
-                            }
+                            ProcessCompleteMessages(user_token);
                         }
                     }
-                    else if(received_info.pt_id == PROTOCOL.Send_Message)
+                    else
                     {
-                        chat_manager_cs.enqueue_chat_message(user_token, received_info);
-                    }
-                    else if(received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request || received_info.pt_id == PROTOCOL.MiniGame_End_Request || received_info.pt_id == PROTOCOL.Sub_Quest_End_Request)
-                    {
-                        Console.WriteLine("\nClient Send Quest Message\n");
-                        game_manager_cs.enqueue_game_message(user_token, received_info);
+                        ProcessCompleteMessages(user_token);
                     }
 
                     bool pending = user_token.socket.ReceiveAsync(e);
@@ -598,6 +519,107 @@ namespace Chat_Server
                 on_session_closed(user_token);
             }
         }
+
+        void ProcessCompleteMessages(Token user_token)
+        {
+            string completeMessage;
+            while ((completeMessage = user_token.GetCompleteMessage()) != null)
+            {
+                // 완전한 메시지가 수신되었을 경우 처리
+                message received_info = JsonConvert.DeserializeObject<message>(completeMessage);
+                if (received_info.pt_id == PROTOCOL.Position_Update)
+                {
+                    var updateFilter = Builders<BsonDocument>.Filter.Eq("Nickname", user_token.client_nickname);
+                    var update = Builders<BsonDocument>.Update
+                        .Set("scene_num", received_info.ingame_info.scene_num)
+                        .Set("x_position", received_info.ingame_info.x_position)
+                        .Set("y_position", received_info.ingame_info.y_position);
+
+                    UserCharacter.UpdateOne(updateFilter, update);
+                    //Console.WriteLine("Nickname: " + user_token.client_nickname + " >> scene_num: " + received_info.ingame_info.scene_num + ", x_position: " + received_info.ingame_info.x_position + ", y_position: " + received_info.ingame_info.y_position);
+
+                    message new_message1 = new message();
+                    new_message1.pt_id = PROTOCOL.Deliver_Position;
+                    login_success_info other_user_position = new login_success_info();
+                    other_user_position.Nickname = received_info.ingame_info.own_nickname;
+                    other_user_position.scene_num = received_info.ingame_info.scene_num;
+                    other_user_position.x_position = received_info.ingame_info.x_position;
+                    other_user_position.y_position = received_info.ingame_info.y_position;
+                    new_message1.first_login_info = other_user_position;
+                    string new_deliver_message1 = JsonConvert.SerializeObject(new_message1);
+                    byte[] messageBuffer1 = Encoding.UTF8.GetBytes(new_deliver_message1);
+
+                    message new_message2 = new message();
+                    new_message2.pt_id = PROTOCOL.Delete_User;
+                    login_success_info other_user_off = new login_success_info();
+                    other_user_off.Nickname = user_token.client_nickname;
+                    other_user_off.scene_num = user_token.scene_num;
+                    new_message2.first_login_info = other_user_off;
+                    string new_deliver_message2 = JsonConvert.SerializeObject(new_message2);
+                    byte[] messageBuffer2 = Encoding.UTF8.GetBytes(new_deliver_message2);
+
+                    if (user_token.scene_num == received_info.ingame_info.scene_num)
+                    {
+                        foreach (Token t in users)
+                        {
+                            if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
+                            {
+                                try
+                                {
+                                    t.socket.Send(messageBuffer1);
+                                }
+                                catch (Exception sendEx)
+                                {
+                                    Console.WriteLine("Error sending to client: " + sendEx.Message);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (Token t in users)
+                        {
+                            if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
+                            {
+                                try
+                                {
+                                    t.socket.Send(messageBuffer2);
+                                }
+                                catch (Exception sendEx)
+                                {
+                                    Console.WriteLine("Error sending to client: " + sendEx.Message);
+                                }
+                            }
+                        }
+                        user_token.scene_num = received_info.ingame_info.scene_num;
+                        foreach (Token t in users)
+                        {
+                            if (t.client_nickname != user_token.client_nickname && t.scene_num == user_token.scene_num)
+                            {
+                                try
+                                {
+                                    t.socket.Send(messageBuffer1);
+                                }
+                                catch (Exception sendEx)
+                                {
+                                    Console.WriteLine("Error sending to client: " + sendEx.Message);
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (received_info.pt_id == PROTOCOL.Send_Message)
+                {
+                    chat_manager_cs.enqueue_chat_message(user_token, received_info);
+                }
+                else if (received_info.pt_id == PROTOCOL.Quest_Start_Request || received_info.pt_id == PROTOCOL.Quest_Complete_Request || received_info.pt_id == PROTOCOL.MiniGame_End_Request || received_info.pt_id == PROTOCOL.Sub_Quest_End_Request)
+                {
+                    Console.WriteLine("\nClient Send Quest Message\n");
+                    game_manager_cs.enqueue_game_message(user_token, received_info);
+                }
+            }
+        }
+
         void SendDataToToken(Token token, string message)
         {
             try
@@ -612,6 +634,7 @@ namespace Chat_Server
                 // 에러 처리
             }
         }
+
         void add_users(Token token)
         {
             Console.WriteLine("on_session_created");

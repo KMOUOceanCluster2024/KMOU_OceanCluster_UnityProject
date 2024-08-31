@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Threading;
+using System.IO;
 
 namespace Chat_Server
 {
@@ -21,6 +22,9 @@ namespace Chat_Server
         public string client_nickname;
         int is_closed;
         public int scene_num;
+
+        private MemoryStream messageStream = new MemoryStream();
+        private int expectedMessageLength = -1;
         public Token(string client_ID)
         {
             this.client_ID = client_ID;
@@ -44,5 +48,49 @@ namespace Chat_Server
             this.send_event_args = null;
             this.receive_event_args = null;
         }
+
+        public void AppendData(byte[] data, int bytesReceived)
+        {
+            messageStream.Write(data, 0, bytesReceived);
+        }
+
+        public bool TryReadMessageLength()
+        {
+            if (expectedMessageLength == -1 && messageStream.Length >= 4)
+            {
+                messageStream.Position = 0; // 스트림의 처음으로 이동
+                byte[] lengthBytes = new byte[4];
+                messageStream.Read(lengthBytes, 0, 4);
+                expectedMessageLength = BitConverter.ToInt32(lengthBytes, 0);
+
+                // 메시지 길이만큼의 공간 확보를 위해 스트림 리셋
+                MemoryStream tempStream = new MemoryStream();
+                tempStream.Write(messageStream.GetBuffer(), 4, (int)messageStream.Length - 4);
+                messageStream = tempStream;
+                return true;
+            }
+            return false;
+        }
+
+        public string GetCompleteMessage()
+        {
+            if (expectedMessageLength > 0 && messageStream.Length >= expectedMessageLength)
+            {
+                messageStream.Position = 0; // 스트림의 처음으로 이동
+                byte[] messageBytes = new byte[expectedMessageLength];
+                messageStream.Read(messageBytes, 0, expectedMessageLength);
+
+                // 다음 메시지를 위해 스트림 리셋
+                MemoryStream tempStream = new MemoryStream();
+                tempStream.Write(messageStream.GetBuffer(), expectedMessageLength, (int)messageStream.Length - expectedMessageLength);
+                messageStream = tempStream;
+
+                expectedMessageLength = -1; // 다음 메시지를 위해 길이 리셋
+                return System.Text.Encoding.UTF8.GetString(messageBytes);
+            }
+            return null;
+        }
+
+        public bool HasMessageLength => expectedMessageLength != -1;
     }
 }
