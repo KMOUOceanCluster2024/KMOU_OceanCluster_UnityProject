@@ -59,10 +59,10 @@ namespace Chat_Server
                         ingame_chat.message = chat_request.owner_info.client_nickname + ": " + chat_request.chat_message.ingame_info.message;
                         new_message.ingame_info = ingame_chat;
                         string new_deliver_message = JsonConvert.SerializeObject(new_message);
-                        byte[] messageBuffer = Encoding.UTF8.GetBytes(new_deliver_message);
+
                         foreach(var current_token in current_users)
                         {
-                            current_token.socket.Send(messageBuffer);
+                            server_network.SendDataToToken(current_token, new_deliver_message);
                         }
                         break;
                     case 1:

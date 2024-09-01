@@ -56,9 +56,6 @@ namespace Chat_Server
                         quest_info1.quest_state = 1;
                         new_message1.ingame_info = quest_info1;
                         string new_deliver_message1 = JsonConvert.SerializeObject(new_message1);
-                        byte[] messageBuffer1 = Encoding.UTF8.GetBytes(new_deliver_message1);
-                        game_request.owner_info.socket.Send(messageBuffer1);
-                        Console.WriteLine("Sent to Client Quest_Start_Success");
 
                         //DB 작업 => this.server_network.UserCharacter
                         var updateFilter1 = Builders<BsonDocument>.Filter.Eq("Nickname", game_request.owner_info.client_nickname);
@@ -67,6 +64,9 @@ namespace Chat_Server
                             .Set("Detail_Quest_num", quest_info1.detail_quest_num)
                             .Set("Quest_State", quest_info1.quest_state);
                         this.server_network.UserCharacter.UpdateOne(updateFilter1, update1);
+
+                        server_network.SendDataToToken(game_request.owner_info, new_deliver_message1);
+                        Console.WriteLine("Sent to Client Quest_Start_Success");
                         break;
                     case PROTOCOL.Quest_Complete_Request:
                         message new_message2 = new message();
@@ -78,9 +78,6 @@ namespace Chat_Server
                         quest_info2.quest_state = 0;
                         new_message2.ingame_info = quest_info2;
                         string new_deliver_message2 = JsonConvert.SerializeObject(new_message2);
-                        byte[] messageBuffer2 = Encoding.UTF8.GetBytes(new_deliver_message2);
-                        game_request.owner_info.socket.Send(messageBuffer2);
-                        Console.WriteLine("Sent to Client Quest_Complete_Success");
 
                         //DB 작업 => this.server_network.UserCharacter
                         var updateFilter2 = Builders<BsonDocument>.Filter.Eq("Nickname", game_request.owner_info.client_nickname);
@@ -89,6 +86,9 @@ namespace Chat_Server
                             .Set("Detail_Quest_num", quest_info2.detail_quest_num)
                             .Set("Quest_State", quest_info2.quest_state);
                         this.server_network.UserCharacter.UpdateOne(updateFilter2, update2);
+
+                        server_network.SendDataToToken(game_request.owner_info, new_deliver_message2);
+                        Console.WriteLine("Sent to Client Quest_Complete_Success");
                         break;
                     case PROTOCOL.MiniGame_End_Request:
                         message new_message3 = new message();
@@ -97,8 +97,8 @@ namespace Chat_Server
                         minigame_info.scene_num = game_request.owner_info.scene_num;
                         new_message3.ingame_info = minigame_info;
                         string new_deliver_message3 = JsonConvert.SerializeObject(new_message3);
-                        byte[] messageBuffer3 = Encoding.UTF8.GetBytes(new_deliver_message3);
-                        game_request.owner_info.socket.Send(messageBuffer3);
+
+                        server_network.SendDataToToken(game_request.owner_info, new_deliver_message3);
                         Console.WriteLine("Send to Client MiniGame_End_Success");
                         
                         break;
@@ -126,8 +126,8 @@ namespace Chat_Server
                         subquest_info.scene_num = game_request.owner_info.scene_num;
                         new_message4.ingame_info = subquest_info;
                         string new_deliver_message4 = JsonConvert.SerializeObject(new_message4);
-                        byte[] messageBuffer4 = Encoding.UTF8.GetBytes(new_deliver_message4);
-                        game_request.owner_info.socket.Send(messageBuffer4);
+
+                        server_network.SendDataToToken(game_request.owner_info, new_deliver_message4);
                         Console.WriteLine("Send to Client Sub Quest End Success");
                         break;
                     default:

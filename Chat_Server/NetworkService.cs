@@ -413,8 +413,13 @@ namespace Chat_Server
                     }
                     signup_login_send.pt_id = pt_id;
                     string jsonData = JsonConvert.SerializeObject(signup_login_send);
-                    byte[] send_buffer = Encoding.UTF8.GetBytes(jsonData);
-                    clientSocket.Send(send_buffer);
+
+                    byte[] messageBuffer = Encoding.UTF8.GetBytes(jsonData);
+                    int messageLength = messageBuffer.Length;
+                    byte[] lengthBuffer = BitConverter.GetBytes(messageLength);
+
+                    clientSocket.Send(lengthBuffer);
+                    clientSocket.Send(messageBuffer);
 
                     if(islogon==false) StartReceive(clientSocket);
                     else callback_on_newclient(clientSocket, null, receivedInfo.signup_login_info.Email, nickname, scene);
@@ -547,7 +552,6 @@ namespace Chat_Server
                     other_user_position.y_position = received_info.ingame_info.y_position;
                     new_message1.first_login_info = other_user_position;
                     string new_deliver_message1 = JsonConvert.SerializeObject(new_message1);
-                    byte[] messageBuffer1 = Encoding.UTF8.GetBytes(new_deliver_message1);
 
                     message new_message2 = new message();
                     new_message2.pt_id = PROTOCOL.Delete_User;
@@ -556,7 +560,6 @@ namespace Chat_Server
                     other_user_off.scene_num = user_token.scene_num;
                     new_message2.first_login_info = other_user_off;
                     string new_deliver_message2 = JsonConvert.SerializeObject(new_message2);
-                    byte[] messageBuffer2 = Encoding.UTF8.GetBytes(new_deliver_message2);
 
                     if (user_token.scene_num == received_info.ingame_info.scene_num)
                     {
@@ -566,7 +569,7 @@ namespace Chat_Server
                             {
                                 try
                                 {
-                                    t.socket.Send(messageBuffer1);
+                                    SendDataToToken(t, new_deliver_message1);
                                 }
                                 catch (Exception sendEx)
                                 {
@@ -583,7 +586,7 @@ namespace Chat_Server
                             {
                                 try
                                 {
-                                    t.socket.Send(messageBuffer2);
+                                    SendDataToToken(t, new_deliver_message2);
                                 }
                                 catch (Exception sendEx)
                                 {
@@ -598,7 +601,7 @@ namespace Chat_Server
                             {
                                 try
                                 {
-                                    t.socket.Send(messageBuffer1);
+                                    SendDataToToken(t, new_deliver_message1);
                                 }
                                 catch (Exception sendEx)
                                 {
@@ -620,13 +623,16 @@ namespace Chat_Server
             }
         }
 
-        void SendDataToToken(Token token, string message)
+        public void SendDataToToken(Token token, string message)
         {
             try
             {
                 byte[] messageBuffer = Encoding.UTF8.GetBytes(message);
+                int messageLength = messageBuffer.Length;
+                byte[] lengthBuffer = BitConverter.GetBytes(messageLength);
+
+                token.socket.Send(lengthBuffer);
                 token.socket.Send(messageBuffer);
-                Console.WriteLine("deliver message");
             }
             catch (Exception ex)
             {
@@ -663,13 +669,12 @@ namespace Chat_Server
                 other_user_off.scene_num = token.scene_num;
                 new_message.first_login_info = other_user_off;
                 string new_deliver_message = JsonConvert.SerializeObject(new_message);
-                byte[] messageBuffer = Encoding.UTF8.GetBytes(new_deliver_message);
 
                 foreach(Token t in users)
                 {
                     try
                     {
-                        t.socket.Send(messageBuffer);
+                        SendDataToToken(t, new_deliver_message);
                     }
                     catch (Exception sendEx)
                     {
