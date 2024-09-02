@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -627,12 +627,20 @@ namespace Chat_Server
         {
             try
             {
+                // 메시지를 JSON 문자열로 직렬화하고 바이트 배열로 변환
                 byte[] messageBuffer = Encoding.UTF8.GetBytes(message);
                 int messageLength = messageBuffer.Length;
+
+                // 메시지 길이를 바이트 배열로 변환
                 byte[] lengthBuffer = BitConverter.GetBytes(messageLength);
 
-                token.socket.Send(lengthBuffer);
-                token.socket.Send(messageBuffer);
+                // 길이와 메시지를 결합
+                byte[] combinedBuffer = new byte[lengthBuffer.Length + messageBuffer.Length];
+                Buffer.BlockCopy(lengthBuffer, 0, combinedBuffer, 0, lengthBuffer.Length);
+                Buffer.BlockCopy(messageBuffer, 0, combinedBuffer, lengthBuffer.Length, messageBuffer.Length);
+
+                // 결합된 배열을 한 번에 전송
+                token.socket.Send(combinedBuffer);
             }
             catch (Exception ex)
             {
